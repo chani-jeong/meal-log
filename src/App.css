@@ -468,3 +468,25 @@ body {
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
+.meal-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.remove-btn {
+  background: transparent;
+  border: none;
+  color: var(--faint);
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.remove-btn:hover {
+  color: var(--danger);
+  background: rgba(232, 138, 125, 0.08);
+}

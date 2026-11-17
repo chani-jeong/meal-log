@@ -9,13 +9,18 @@ import {
   validateAmount,
 } from './lib/nutrition.js';
 import { searchFoods } from './lib/foodSearch.js';
-import { MEAL_TYPES, groupByMealType, mealTotal } from './lib/mealLog.js';
+import {
+  MEAL_TYPES,
+  groupByMealType,
+  mealTotal,
+  addOrMergeItem,
+  removeItem,
+} from './lib/mealLog.js';
 import './App.css';
 
 const EMPTY_VALUES = Object.fromEntries(NUTRIENT_KEYS.map((key) => [key, '']));
 const SUB_KEYS = NUTRIENT_KEYS.filter((key) => key !== 'kcal');
 
-// 입력한 영양값을 숫자로 바꿉니다. 빈 칸이나 잘못된 값이 있으면 null을 돌려줍니다.
 function parseNutrients(values) {
   const result = {};
   for (const key of NUTRIENT_KEYS) {
@@ -27,7 +32,6 @@ function parseNutrients(values) {
   return result;
 }
 
-// 오늘 요약: 열량을 크게 보여 주고, 나머지 영양소는 기준치 대비 막대로 표시
 function DailySummary({ total, percent }) {
   const kcalOver = percent.kcal > 100;
   return (
@@ -73,8 +77,8 @@ function DailySummary({ total, percent }) {
 
 export default function App() {
   const [query, setQuery] = useState('');
-  const [values, setValues] = useState(EMPTY_VALUES); // 100g당 값 (입력 중에는 문자열)
-  const [filledFrom, setFilledFrom] = useState(null); // 목록에서 골라 자동으로 채운 음식 이름
+  const [values, setValues] = useState(EMPTY_VALUES);
+  const [filledFrom, setFilledFrom] = useState(null);
   const [mealType, setMealType] = useState('breakfast');
   const [amountInput, setAmountInput] = useState('100');
   const [meal, setMeal] = useState([]);
@@ -95,7 +99,6 @@ export default function App() {
   const total = sumNutrients(meal.map((item) => item.nutrients));
   const percent = percentOfDaily(total);
 
-  // 음식 이름이 바뀌면 이전에 채워진 영양값을 지웁니다.
   function handleQueryChange(value) {
     setQuery(value);
     setMessage('');
@@ -134,21 +137,29 @@ export default function App() {
       setMessage('');
       return;
     }
-    setMeal((prev) => [
-      ...prev,
-      {
-        mealType,
-        name: trimmedQuery,
-        amount,
-        nutrients: nutrientsForAmount(per100g, amount),
-      },
-    ]);
-    // 추가가 끝나면 다음 음식을 바로 입력할 수 있도록 입력값을 비웁니다. 끼니 선택은 유지합니다.
+
+    const newItem = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      mealType,
+      name: trimmedQuery,
+      amount,
+      nutrients: nutrientsForAmount(per100g, amount),
+    };
+    const result = addOrMergeItem(meal, newItem);
+    if (result.error) {
+      setError(result.error);
+      setMessage('');
+      return;
+    }
+
+    setMeal(result.items);
     setQuery('');
     setValues(EMPTY_VALUES);
     setFilledFrom(null);
     setError('');
-    setMessage('');
+    setMessage(
+      result.merged ? `같은 끼니에 있던 "${trimmedQuery}"의 섭취량을 합쳤습니다.` : '',
+    );
   }
 
   return (
@@ -286,10 +297,20 @@ export default function App() {
                     </div>
                     {items.length > 0 && (
                       <ul className="meal-list">
-                        {items.map((item, i) => (
-                          <li key={i}>
+                        {items.map((item) => (
+                          <li key={item.id}>
                             <span>{item.name} {item.amount}g</span>
-                            <span className="meal-meta">{Math.round(item.nutrients.kcal)} kcal</span>
+                            <span className="meal-actions">
+                              <span className="meal-meta">{Math.round(item.nutrients.kcal)} kcal</span>
+                              <button
+                                type="button"
+                                className="remove-btn"
+                                aria-label={`${item.name} 삭제`}
+                                onClick={() => setMeal((prev) => removeItem(prev, item.id))}
+                              >
+                                ×
+                              </button>
+                            </span>
                           </li>
                         ))}
                       </ul>
