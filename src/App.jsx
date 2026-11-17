@@ -16,6 +16,14 @@ import {
   addOrMergeItem,
   removeItem,
 } from './lib/mealLog.js';
+import {
+  GOAL_OPTIONS,
+  evaluateGoal,
+  getGoalLabel,
+  validateTargetKcal,
+  lowCalorieWarning,
+} from './lib/goal.js';
+import UserBadge from './components/UserBadge.jsx';
 import './App.css';
 
 const EMPTY_VALUES = Object.fromEntries(NUTRIENT_KEYS.map((key) => [key, '']));
@@ -75,12 +83,14 @@ function DailySummary({ total, percent }) {
   );
 }
 
-export default function App() {
+export default function App({ user = null }) {
   const [query, setQuery] = useState('');
   const [values, setValues] = useState(EMPTY_VALUES);
   const [filledFrom, setFilledFrom] = useState(null);
   const [mealType, setMealType] = useState('breakfast');
   const [amountInput, setAmountInput] = useState('100');
+  const [goalType, setGoalType] = useState('lose');
+  const [targetInput, setTargetInput] = useState('2000');
   const [meal, setMeal] = useState([]);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -98,6 +108,11 @@ export default function App() {
   const groups = groupByMealType(meal);
   const total = sumNutrients(meal.map((item) => item.nutrients));
   const percent = percentOfDaily(total);
+
+  const targetError = validateTargetKcal(targetInput);
+  const target = Number(targetInput);
+  const evaluation = targetError ? null : evaluateGoal(goalType, total.kcal, target);
+  const warning = targetError ? null : lowCalorieWarning(target);
 
   function handleQueryChange(value) {
     setQuery(value);
@@ -188,6 +203,7 @@ export default function App() {
             <span className="wordmark">Meal<strong>Log</strong></span>
           </h1>
         </div>
+        <UserBadge user={user} />
       </header>
 
       <div className="layout">
@@ -273,6 +289,32 @@ export default function App() {
             <span className="count">{meal.length}건</span>
           </h2>
 
+          <h3 className="sub-title sub-title-first">목표</h3>
+          <div className="segmented">
+            {GOAL_OPTIONS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                className={goalType === key ? 'active' : ''}
+                onClick={() => setGoalType(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="field-row">
+            <input
+              className="input goal-input"
+              type="number"
+              aria-label="목표 칼로리 (kcal)"
+              value={targetInput}
+              onChange={(e) => setTargetInput(e.target.value)}
+            />
+            <span className="unit">kcal</span>
+          </div>
+          {targetError && <p role="alert" className="error">{targetError}</p>}
+          {warning && <p className="warn">{warning}</p>}
+
           {meal.length === 0 ? (
             <div className="empty">
               아직 기록된 식사가 없습니다.
@@ -282,6 +324,12 @@ export default function App() {
           ) : (
             <>
               <DailySummary total={total} percent={percent} />
+
+              {evaluation && (
+                <p className={evaluation.ok ? 'goal-status ok' : 'goal-status'}>
+                  {getGoalLabel(goalType)} 목표 · {evaluation.status} · 목표 대비 {evaluation.percent}%
+                </p>
+              )}
 
               <h3 className="sub-title">끼니별 기록</h3>
               {MEAL_TYPES.map(({ key, label }) => {

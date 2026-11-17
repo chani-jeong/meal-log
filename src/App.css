@@ -490,3 +490,58 @@ body {
   color: var(--danger);
   background: rgba(232, 138, 125, 0.08);
 }
+.sub-title-first {
+  margin-top: 0;
+}
+
+.goal-input {
+  width: 160px;
+}
+
+.warn {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: #e0b25c;
+  line-height: 1.6;
+}
+
+.goal-status {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.goal-status.ok {
+  color: var(--accent);
+}
+
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar,
+.avatar-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.avatar-img {
+  object-fit: cover;
+}
+
+.user-name {
+  font-size: 14px;
+  color: var(--text);
+}
