@@ -418,3 +418,75 @@ body {
 @media (max-width: 860px) {
   .wordmark { font-size: 30px; }
 }
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.segmented button {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 10px 0;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.segmented button:hover {
+  color: var(--text);
+  border-color: #34343c;
+}
+
+.segmented button.active {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.meal-group {
+  margin-top: 22px;
+}
+
+.meal-group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.meal-group-head .meta {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.meal-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.remove-btn {
+  background: transparent;
+  border: none;
+  color: var(--faint);
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.remove-btn:hover {
+  color: var(--danger);
+  background: rgba(232, 138, 125, 0.08);
+}
