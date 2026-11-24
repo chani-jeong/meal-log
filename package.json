@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node --test src/lib/nutrition.test.js src/lib/foodSearch.test.js src/lib/mealLog.test.js src/lib/goal.test.js"
+    "test": "node --test src/lib/nutrition.test.js src/lib/foodSearch.test.js src/lib/mealLog.test.js src/lib/goal.test.js src/lib/mealMapper.test.js src/lib/date.test.js"
   },
   "dependencies": {
     "firebase": "^13.3.0",

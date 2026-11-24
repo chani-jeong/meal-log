@@ -60,3 +60,15 @@ export function addOrMergeItem(items, newItem) {
 export function removeItem(items, id) {
   return items.filter((item) => item.id !== id);
 }
+// 기록 수정: 섭취량을 바꾸면 영양값도 같은 비율로 다시 계산합니다.
+export function changeAmount(item, newAmount) {
+  if (!(item.amount > 0)) return { ...item, amount: newAmount };
+  const ratio = newAmount / item.amount;
+  return {
+    ...item,
+    amount: newAmount,
+    nutrients: Object.fromEntries(
+      NUTRIENT_KEYS.map((key) => [key, (item.nutrients[key] ?? 0) * ratio]),
+    ),
+  };
+}

@@ -6,6 +6,7 @@ import {
   mealTotal,
   addOrMergeItem,
   removeItem,
+  changeAmount,
 } from './mealLog.js';
 
 const zero = { kcal: 0, protein: 0, fat: 0, saturatedFat: 0, cholesterol: 0, sodium: 0 };
@@ -78,4 +79,13 @@ test('id로 기록을 삭제한다', () => {
   const a = make();
   const b = make();
   assert.deepEqual(removeItem([a, b], a.id), [b]);
+});
+
+test('섭취량을 바꾸면 영양값을 같은 비율로 다시 계산한다', () => {
+  const item = make({ amount: 100, nutrients: { ...zero, kcal: 165, protein: 31 } });
+  const changed = changeAmount(item, 150);
+  assert.equal(changed.amount, 150);
+  assert.equal(changed.nutrients.kcal, 247.5);
+  assert.equal(changed.nutrients.protein, 46.5);
+  assert.equal(changed.id, item.id);
 });
