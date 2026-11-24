@@ -83,7 +83,7 @@ function DailySummary({ total, percent }) {
   );
 }
 
-export default function App({ user = null }) {
+export default function App({ user = null, onLogout }) {
   const [query, setQuery] = useState('');
   const [values, setValues] = useState(EMPTY_VALUES);
   const [filledFrom, setFilledFrom] = useState(null);
@@ -203,7 +203,12 @@ export default function App({ user = null }) {
             <span className="wordmark">Meal<strong>Log</strong></span>
           </h1>
         </div>
-        <UserBadge user={user} />
+        <div className="header-actions">
+          <UserBadge user={user} />
+          {onLogout && (
+            <button type="button" className="logout-btn" onClick={onLogout}>로그아웃</button>
+          )}
+        </div>
       </header>
 
       <div className="layout">

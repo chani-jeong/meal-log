@@ -545,3 +545,17 @@ body {
   font-size: 14px;
   color: var(--text);
 }
+/* ===== 로그인·회원가입 화면 ===== */
+.auth-page { display: flex; flex-direction: column; align-items: center; padding-top: 10vh; }
+.auth-brand { margin-bottom: 24px; }
+.auth-panel { width: min(100%, 400px); display: flex; flex-direction: column; }
+.auth-panel .input { margin-bottom: 16px; }
+.auth-submit { width: 100%; margin-top: 8px; }
+.auth-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+.auth-switch { margin-top: 16px; background: none; border: 0; color: var(--muted); cursor: pointer; font: inherit; }
+.auth-switch:hover { color: var(--accent); }
+
+/* ===== 헤더 로그아웃 ===== */
+.header-actions { display: flex; align-items: center; gap: 12px; }
+.logout-btn { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 6px 14px; cursor: pointer; font: inherit; font-size: 13px; }
+.logout-btn:hover { color: var(--text); border-color: var(--accent); }
