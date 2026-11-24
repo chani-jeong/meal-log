@@ -14,8 +14,11 @@ import {
   groupByMealType,
   mealTotal,
   addOrMergeItem,
-  removeItem,
+  changeAmount,
 } from './lib/mealLog.js';
+import { toDateKey, validateRecordDate, formatDateKey } from './lib/date.js';
+import { useMeals } from './hooks/useMeals.js';
+import { addMeal, updateMealAmount, deleteMeal } from './services/mealRepository.js';
 import {
   GOAL_OPTIONS,
   evaluateGoal,
@@ -91,15 +94,17 @@ export default function App({ user = null, onLogout }) {
   const [amountInput, setAmountInput] = useState('100');
   const [goalType, setGoalType] = useState('lose');
   const [targetInput, setTargetInput] = useState('2000');
-  const [meal, setMeal] = useState([]);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editAmount, setEditAmount] = useState('');
 
-  const today = new Date().toLocaleDateString('ko-KR', {
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long',
-  });
+  const todayKey = toDateKey();
+  const [dateKey, setDateKey] = useState(todayKey);
+  const uid = user?.uid;
+  const { meals: meal, loading, error: loadError } = useMeals(uid, dateKey);
+  const today = formatDateKey(dateKey);
 
   const trimmedQuery = query.trim();
   const isExactMatch = foods.some((food) => food.name === trimmedQuery);
@@ -133,7 +138,13 @@ export default function App({ user = null, onLogout }) {
     setMessage(`"${food.name}"의 100g당 값을 채웠습니다. 필요하면 수정하세요.`);
   }
 
-  function addItem() {
+  async function addItem() {
+    const dateError = validateRecordDate(dateKey, todayKey);
+    if (dateError) {
+      setError(dateError);
+      setMessage('');
+      return;
+    }
     if (!trimmedQuery) {
       setError('음식 이름을 입력해 주세요.');
       setMessage('');
@@ -155,6 +166,7 @@ export default function App({ user = null, onLogout }) {
 
     const newItem = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      date: dateKey,
       mealType,
       name: trimmedQuery,
       amount,
@@ -167,7 +179,25 @@ export default function App({ user = null, onLogout }) {
       return;
     }
 
-    setMeal(result.items);
+    setSaving(true);
+    try {
+      if (result.merged) {
+        const mergedItem = result.items.find(
+          (item) => item.mealType === newItem.mealType && item.name === newItem.name,
+        );
+        await updateMealAmount(uid, mergedItem);
+      } else {
+        await addMeal(uid, newItem);
+      }
+    } catch {
+      // 저장 실패 시 입력값을 지우지 않고 다시 시도할 수 있게 둡니다.
+      setError('저장하지 못했습니다. 네트워크를 확인하고 다시 시도해 주세요.');
+      setMessage('');
+      setSaving(false);
+      return;
+    }
+    setSaving(false);
+
     setQuery('');
     setValues(EMPTY_VALUES);
     setFilledFrom(null);
@@ -175,6 +205,37 @@ export default function App({ user = null, onLogout }) {
     setMessage(
       result.merged ? `같은 끼니에 있던 "${trimmedQuery}"의 섭취량을 합쳤습니다.` : '',
     );
+  }
+
+  async function handleDelete(item) {
+    try {
+      await deleteMeal(uid, item.id);
+      setError('');
+    } catch {
+      setError(`"${item.name}"을(를) 삭제하지 못했습니다. 다시 시도해 주세요.`);
+    }
+  }
+
+  function startEdit(item) {
+    setEditingId(item.id);
+    setEditAmount(String(item.amount));
+    setError('');
+  }
+
+  async function saveEdit(item) {
+    const amount = Number(editAmount);
+    const amountError = validateAmount(amount);
+    if (amountError) {
+      setError(amountError);
+      return;
+    }
+    try {
+      await updateMealAmount(uid, changeAmount(item, amount));
+      setEditingId(null);
+      setError('');
+    } catch {
+      setError('수정하지 못했습니다. 다시 시도해 주세요.');
+    }
   }
 
   return (
@@ -214,6 +275,16 @@ export default function App({ user = null, onLogout }) {
       <div className="layout">
         <section className="panel">
           <h2 className="panel-title">음식 추가</h2>
+
+          <label className="field-label" htmlFor="record-date">기록 날짜</label>
+          <input
+            id="record-date"
+            className="input date-input"
+            type="date"
+            value={dateKey}
+            max={todayKey}
+            onChange={(e) => setDateKey(e.target.value || todayKey)}
+          />
 
           <label className="field-label">끼니</label>
           <div className="segmented">
@@ -281,7 +352,9 @@ export default function App({ user = null, onLogout }) {
               onChange={(e) => setAmountInput(e.target.value)}
             />
             <span className="unit">g</span>
-            <button className="btn-primary" onClick={addItem}>추가</button>
+            <button className="btn-primary" onClick={addItem} disabled={saving}>
+              {saving ? '저장 중…' : '추가'}
+            </button>
           </div>
 
           {message && <p className="hint">{message}</p>}
@@ -320,7 +393,11 @@ export default function App({ user = null, onLogout }) {
           {targetError && <p role="alert" className="error">{targetError}</p>}
           {warning && <p className="warn">{warning}</p>}
 
-          {meal.length === 0 ? (
+          {loadError && <p role="alert" className="error">{loadError}</p>}
+
+          {loading ? (
+            <div className="empty">기록을 불러오는 중입니다…</div>
+          ) : meal.length === 0 ? (
             <div className="empty">
               아직 기록된 식사가 없습니다.
               <br />
@@ -352,18 +429,44 @@ export default function App({ user = null, onLogout }) {
                       <ul className="meal-list">
                         {items.map((item) => (
                           <li key={item.id}>
-                            <span>{item.name} {item.amount}g</span>
-                            <span className="meal-actions">
-                              <span className="meal-meta">{Math.round(item.nutrients.kcal)} kcal</span>
-                              <button
-                                type="button"
-                                className="remove-btn"
-                                aria-label={`${item.name} 삭제`}
-                                onClick={() => setMeal((prev) => removeItem(prev, item.id))}
-                              >
-                                ×
-                              </button>
-                            </span>
+                            {editingId === item.id ? (
+                              <span className="edit-row">
+                                <span>{item.name}</span>
+                                <input
+                                  className="input edit-input"
+                                  type="number"
+                                  aria-label={`${item.name} 섭취량 (g)`}
+                                  value={editAmount}
+                                  onChange={(e) => setEditAmount(e.target.value)}
+                                />
+                                <span className="unit">g</span>
+                                <button type="button" className="text-btn" onClick={() => saveEdit(item)}>저장</button>
+                                <button type="button" className="text-btn" onClick={() => setEditingId(null)}>취소</button>
+                              </span>
+                            ) : (
+                              <>
+                                <span>{item.name} {item.amount}g</span>
+                                <span className="meal-actions">
+                                  <span className="meal-meta">{Math.round(item.nutrients.kcal)} kcal</span>
+                                  <button
+                                    type="button"
+                                    className="text-btn"
+                                    aria-label={`${item.name} 수정`}
+                                    onClick={() => startEdit(item)}
+                                  >
+                                    수정
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="remove-btn"
+                                    aria-label={`${item.name} 삭제`}
+                                    onClick={() => handleDelete(item)}
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              </>
+                            )}
                           </li>
                         ))}
                       </ul>

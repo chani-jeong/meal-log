@@ -559,3 +559,11 @@ body {
 .header-actions { display: flex; align-items: center; gap: 12px; }
 .logout-btn { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 6px 14px; cursor: pointer; font: inherit; font-size: 13px; }
 .logout-btn:hover { color: var(--text); border-color: var(--accent); }
+
+/* ===== 날짜 선택·기록 수정 ===== */
+.date-input { margin-bottom: 16px; color-scheme: dark; }
+.text-btn { background: none; border: 0; color: var(--muted); cursor: pointer; font: inherit; font-size: 13px; padding: 2px 4px; }
+.text-btn:hover { color: var(--accent); }
+.edit-row { display: flex; align-items: center; gap: 8px; width: 100%; flex-wrap: wrap; }
+.edit-input { width: 90px; padding: 6px 10px; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
