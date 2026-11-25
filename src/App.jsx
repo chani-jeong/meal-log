@@ -179,6 +179,12 @@ export default function App({ user = null, onLogout }) {
       return;
     }
 
+    if (!navigator.onLine) {
+      setError('인터넷 연결이 없어 저장하지 못했습니다. 연결을 확인하고 다시 시도해 주세요.');
+      setMessage('');
+      return;
+    }
+
     setSaving(true);
     try {
       if (result.merged) {
@@ -208,6 +214,10 @@ export default function App({ user = null, onLogout }) {
   }
 
   async function handleDelete(item) {
+    if (!navigator.onLine) {
+      setError('인터넷 연결이 없어 삭제하지 못했습니다. 연결을 확인하고 다시 시도해 주세요.');
+      return;
+    }
     try {
       await deleteMeal(uid, item.id);
       setError('');
@@ -223,6 +233,10 @@ export default function App({ user = null, onLogout }) {
   }
 
   async function saveEdit(item) {
+    if (!navigator.onLine) {
+      setError('인터넷 연결이 없어 수정하지 못했습니다. 연결을 확인하고 다시 시도해 주세요.');
+      return;
+    }
     const amount = Number(editAmount);
     const amountError = validateAmount(amount);
     if (amountError) {
